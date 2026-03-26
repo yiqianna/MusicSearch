@@ -1,0 +1,69 @@
+{
+  "name": "problem-set-09",
+  "version": "0.4.25.2",
+  "private": true,
+  "description": "",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/eslint-parser": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
+    "@babel/preset-react": "^7.28.5",
+    "@fortawesome/fontawesome-svg-core": "^7.1.0",
+    "@fortawesome/free-solid-svg-icons": "^7.1.0",
+    "@fortawesome/react-fontawesome": "^3.1.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
+    "babel-jest": "^30.2.0",
+    "bootstrap": "^5.3.8",
+    "jest-fetch-mock": "^3.0.3",
+    "jest-fixed-jsdom": "^0.0.11",
+    "react": "^19.2.3",
+    "react-bootstrap": "^2.10.10",
+    "react-dom": "^19.2.3",
+    "react-router": "^7.11.0",
+    "whatwg-fetch": "^3.6.20"
+  },
+  "jest": {
+    "testEnvironment": "jest-fixed-jsdom",
+    "moduleNameMapper": {
+      "\\.(css|less)$": "<rootDir>/__mocks__/styleMock.js",
+      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/../__mocks__/fileMock.js"
+    }
+  },
+  "eslintConfig": {
+    "parser": "@babel/eslint-parser",
+    "parserOptions": {
+      "ecmaVersion": 6
+    },
+    "extends": [
+      "react-app"
+    ],
+    "rules": {
+      "no-console": "off",
+      "semi": [
+        "off",
+        "always",
+        {
+          "omitLastInOneLineBlock": true
+        }
+      ],
+      "camelcase": [
+        "error"
+      ],
+      "jsx-a11y/anchor-is-valid": [
+        "error",
+        {
+          "aspects": [
+            "noHref"
+          ]
+        }
+      ]
+    }
+  }
+}
