@@ -2,6 +2,7 @@
 
 Waveform is a React + Vite web app for searching albums, previewing tracks, and saving favorites, powered by the [iTunes Search API](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/Searching.html).
 
+Visit Site: https://musicsearch-1305b.web.app
 ## Features
 
 - **Landing** — Animated gradient background, Google / email paths, and explore-as-guest.
