@@ -1,10 +1,13 @@
 {
-  "name": "problem-set-09",
-  "version": "0.4.25.2",
+  "name": "musicsearch-workspace",
+  "version": "0.1.0",
   "private": true,
-  "description": "",
+  "description": "Workspace configuration for the MusicSearch project",
   "scripts": {
-    "test": "jest"
+    "dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "preview": "npm run preview --prefix frontend",
+    "lint": "npm run lint --prefix frontend"
   },
   "author": "",
   "license": "ISC",
@@ -28,13 +31,6 @@
     "react-dom": "^19.2.3",
     "react-router": "^7.11.0",
     "whatwg-fetch": "^3.6.20"
-  },
-  "jest": {
-    "testEnvironment": "jest-fixed-jsdom",
-    "moduleNameMapper": {
-      "\\.(css|less)$": "<rootDir>/__mocks__/styleMock.js",
-      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/../__mocks__/fileMock.js"
-    }
   },
   "eslintConfig": {
     "parser": "@babel/eslint-parser",

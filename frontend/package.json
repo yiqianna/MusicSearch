@@ -1,7 +1,8 @@
 {
-  "name": "problem-ajax",
+  "name": "musicsearch-frontend",
   "private": true,
-  "version": "0.3.25.2",
+  "version": "0.1.0",
+  "description": "Frontend application for the MusicSearch web experience",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -38,15 +39,5 @@
     "jest-fetch-mock": "^3.0.3",
     "jest-fixed-jsdom": "^0.0.11",
     "vite": "^7.3.0"
-  },
-  "jest": {
-    "testEnvironment": "jest-fixed-jsdom",
-    "moduleDirectories": [
-      "node_modules"
-    ],
-    "moduleNameMapper": {
-      "\\.(css|less)$": "<rootDir>/../__mocks__/styleMock.js",
-      "\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$": "<rootDir>/../__mocks__/fileMock.js"
-    }
   }
 }

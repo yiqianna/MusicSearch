@@ -7,3 +7,8 @@ Thumbs.db
 
 # ignore vs code config files
 .vscode
+
+# Firebase
+.firebase
+firebase-debug.log
+firestore-debug.log

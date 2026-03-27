@@ -1,25 +1,41 @@
-# Problem Set 09
+# MusicSearch
 
-This repository contains practice exercises for the _Client-Side Web Development_ course at the UW iSchool.
+MusicSearch is a React + Vite web app for exploring albums and previewing tracks through the iTunes Search API.
 
-To complete this problem set, follow the instructions in the `README.md` file for each problem.
+The current codebase includes a working MVP search flow and album detail route. This repository is being extended from a classroom prototype into a complete web experience.
 
-## Checking Your Work
-This exercise comes with a suite of _unit tests_ that you can use to check your work and understanding. Tests are **not** guaranteed to be comprehensive.
+## Project Structure
 
-In order to run these tests, you will need to install the test dependencies listed in the `package.json` file:
+- `frontend/`: main frontend app (source code, Vite config, local app scripts)
+- `__mocks__/`: test mocks used by legacy Jest tests
+- root `package.json`: workspace-level scripts and test config
+
+## Quick Start
 
 ```bash
-# install dependencies
+# install root dependencies (for tests/tooling)
 npm install
+
+# install frontend dependencies
+npm install --prefix frontend
+
+# start frontend dev server
+npm run dev
 ```
 
-You run the tests by using the [Jest](https://facebook.github.io/jest/) test runner. You can install this package globally, or you can can run it through `npx`.
+## Available Scripts
 
-```bash
-# Example: run tests for problem-a
-npx jest problem-a
+From the repository root:
 
-# Run tests for all problems
-npx jest
-```
+- `npm run dev` - run frontend in development mode
+- `npm run build` - build production bundle
+- `npm run preview` - preview production build locally
+- `npm run lint` - lint frontend source
+- `npm run test` - run legacy Jest test suite
+
+## Roadmap
+
+- Refine UI/UX and interaction design
+- Improve metadata display and browsing experience
+- Add richer filtering and discovery features
+- Introduce deployment pipeline and production readiness checks
