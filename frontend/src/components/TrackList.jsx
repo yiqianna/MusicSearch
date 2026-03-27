@@ -7,10 +7,16 @@ import React, {
 } from 'react';
 import { Link, useParams } from 'react-router';
 
+import AuthCorner from './AuthCorner';
+import AlbumCoverImg from './AlbumCoverImg';
+import {
+  artworkFetchUrl,
+  friendlyItunesNetworkError,
+  lookupAlbumUrl,
+  parseItunesJsonBody,
+} from '../utils/itunesApi';
 import { makeVinylSvgString, paletteForIndex } from '../utils/vinylSvg';
 import '../album-detail.css';
-
-const TRACK_QUERY_TEMPLATE = 'https://itunes.apple.com/lookup?id={collectionId}&limit=50&entity=song';
 
 function formatTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) {
@@ -29,6 +35,8 @@ export default function TrackList({
   setAlertMessage,
   theme = 'light',
   onToggleTheme = () => {},
+  user = null,
+  onSignOut = () => {},
 }) {
   const [trackData, setTrackData] = useState([]);
   const [albumInfo, setAlbumInfo] = useState(null);
@@ -40,6 +48,7 @@ export default function TrackList({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playerVisible, setPlayerVisible] = useState(false);
+  const [playerThumbFailed, setPlayerThumbFailed] = useState(false);
 
   const audioRef = useRef(null);
   const audioListenersCleanupRef = useRef(null);
@@ -57,11 +66,20 @@ export default function TrackList({
   useEffect(() => {
     setAlertMessage(null);
     setIsQuerying(true);
+    setPlayerThumbFailed(false);
 
-    const url = TRACK_QUERY_TEMPLATE.replace('{collectionId}', urlParams.collectionId);
+    const url = lookupAlbumUrl(urlParams.collectionId);
 
-    fetch(url)
-      .then((res) => res.json())
+    fetch(url, { credentials: 'omit' })
+      .then(async (res) => {
+        const text = await res.text();
+        const data = parseItunesJsonBody(text, res.ok);
+        if (!res.ok) {
+          const msg = data.errorMessage || data.error || `Request failed (${res.status}).`;
+          throw new Error(typeof msg === 'string' ? msg : 'Could not load album.');
+        }
+        return data;
+      })
       .then((data) => {
         const results = data.results || [];
         setAlbumInfo(results[0] || null);
@@ -74,9 +92,11 @@ export default function TrackList({
         setTrackData(results.slice(1));
       })
       .catch((err) => {
-        setAlertMessage(err.message);
+        setAlertMessage(friendlyItunesNetworkError(err));
+        setAlbumInfo(null);
+        setTrackData([]);
       })
-      .then(() => {
+      .finally(() => {
         setIsQuerying(false);
       });
   }, [urlParams.collectionId, setAlertMessage]);
@@ -276,6 +296,7 @@ export default function TrackList({
 
   return (
     <div className="album-detail-page">
+      <AuthCorner user={user} onSignOut={onSignOut} />
       <div className="orb orb1" aria-hidden />
       <div className="orb orb2" aria-hidden />
       <div className="orb orb3" aria-hidden />
@@ -307,19 +328,13 @@ export default function TrackList({
 
         {albumInfo && (
           <div className="album-card">
-            {artworkLarge ? (
-              <img
-                className="album-art"
-                src={artworkLarge}
-                alt={albumInfo.collectionName || 'Album'}
-              />
-            ) : (
-              <div className="album-art" aria-hidden>
-                <div className="album-art-inner">
-                  {(albumInfo.collectionName || 'Album').slice(0, 24)}
-                </div>
-              </div>
-            )}
+            <AlbumCoverImg
+              variant="detail"
+              className="album-art"
+              src={artworkLarge}
+              alt={albumInfo.collectionName || 'Album'}
+              placeholderMaxLen={24}
+            />
             <div className="album-meta">
               <div className="album-type-tag">Album</div>
               <div className="album-title">{albumInfo.collectionName}</div>
@@ -394,13 +409,15 @@ export default function TrackList({
                       }}
                     >
                       <div className="vinyl-wrap">
-                        <div
-                          className="vinyl"
-                          // eslint-disable-next-line react/no-danger
-                          dangerouslySetInnerHTML={{
-                            __html: makeVinylSvgString(svgId, color1, color2, accent),
-                          }}
-                        />
+                        <div className="vinyl">
+                          <div
+                            className={`vinyl-rotor${spinning ? ' vinyl-rotor--spinning' : ''}`}
+                            // eslint-disable-next-line react/no-danger
+                            dangerouslySetInnerHTML={{
+                              __html: makeVinylSvgString(svgId, color1, color2, accent),
+                            }}
+                          />
+                        </div>
                         <div className="disc-overlay" aria-hidden>
                           <div className="play-icon">
                             <svg viewBox="0 0 24 24" aria-hidden>
@@ -456,7 +473,7 @@ export default function TrackList({
         <footer className="album-detail-footer">
           <small>
             Powered by the{' '}
-            <a href="https://affiliate.itunes.apple.com/resources/documentation/itunes-store-web-service-search-api/">
+            <a href="https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/Searching.html">
               iTunes Search API
             </a>
           </small>
@@ -465,8 +482,13 @@ export default function TrackList({
 
       <div className={`player-bar${playerVisible ? ' visible' : ''}`} id="album-detail-player-bar">
         <div className="player-thumb">
-          {artworkLarge ? (
-            <img src={artworkLarge} alt="" />
+          {artworkLarge && !playerThumbFailed ? (
+            <img
+              src={artworkFetchUrl(artworkLarge)}
+              alt=""
+              referrerPolicy="no-referrer"
+              onError={() => setPlayerThumbFailed(true)}
+            />
           ) : (
             <svg className="player-thumb-disc" viewBox="0 0 40 40" aria-hidden>
               <circle cx="20" cy="20" r="20" fill="#1a2050" />

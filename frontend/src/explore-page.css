@@ -2,6 +2,7 @@
 .explore-page {
   font-family: "Sora", "Inter", "Segoe UI", sans-serif;
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
   overflow-x: hidden;
   transition: background 0.3s ease, color 0.3s ease;
@@ -137,8 +138,11 @@ body[data-theme="dark"] .ex-orb3 {
   position: relative;
   z-index: 1;
   max-width: 860px;
+  width: 100%;
   margin: 0 auto;
-  padding: 32px 24px 80px;
+  box-sizing: border-box;
+  padding: max(28px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px))
+    max(110px, calc(5.5rem + env(safe-area-inset-bottom, 0px))) max(20px, env(safe-area-inset-left, 0px));
 }
 
 .ex-topbar {
@@ -204,6 +208,9 @@ body[data-theme="dark"] .ex-nav a.ex-nav-active {
   backdrop-filter: blur(12px);
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ex-theme-btn:hover {
@@ -928,12 +935,17 @@ body[data-theme="dark"] .ex-fave-btn {
 
 .explore-alert {
   position: fixed;
-  top: 12px;
+  top: max(12px, env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 300;
-  max-width: min(560px, 92vw);
+  width: min(
+    560px,
+    calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 24px)
+  );
+  max-width: 100%;
   margin: 0;
+  box-sizing: border-box;
 }
 
 .ex-results-loading {
@@ -946,6 +958,24 @@ body[data-theme="dark"] .ex-fave-btn {
 /* Home recommendations (RSS charts) */
 .ex-rec-section {
   margin-bottom: 36px;
+}
+
+.ex-rec-section--error {
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid rgba(232, 93, 106, 0.35);
+  background: rgba(232, 93, 106, 0.08);
+}
+
+.ex-rec-error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #c44a58;
+}
+
+body[data-theme="dark"] .ex-rec-error {
+  color: #ff8a96;
 }
 
 .ex-rec-intro {
@@ -1124,6 +1154,34 @@ body[data-theme="dark"] .ex-rec-skeleton-card {
 }
 
 @media (max-width: 640px) {
+  .ex-page {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .ex-topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .ex-logo {
+    text-align: center;
+  }
+
+  .ex-nav {
+    justify-content: center;
+  }
+
+  .ex-theme-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .ex-hero-title {
+    font-size: clamp(1.45rem, 5.8vw, 2rem);
+  }
+
   .ex-input-row {
     flex-direction: column;
     align-items: stretch;
@@ -1132,5 +1190,17 @@ body[data-theme="dark"] .ex-rec-skeleton-card {
   .ex-search-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .ex-album-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(148px, 100%), 1fr));
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .ex-nav a {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
   }
 }

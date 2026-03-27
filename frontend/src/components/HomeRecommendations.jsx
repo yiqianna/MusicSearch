@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
+import AlbumCoverImg from './AlbumCoverImg';
 import { parseItunesAlbumsRss, splitTrendingAndFresh } from '../utils/itunesRss';
-
-const RSS_TOP =
-  'https://itunes.apple.com/us/rss/topalbums/limit=100/json';
+import { friendlyItunesNetworkError, parseItunesJsonBody, topAlbumsRssJsonUrl } from '../utils/itunesApi';
 
 function yearFromRelease(releaseDate) {
   if (!releaseDate) {
@@ -44,17 +43,11 @@ function RecCard({ album, favoriteIds, onToggleFavorite, style }) {
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </button>
-          {artworkLarge || album.artworkUrl100 ? (
-            <img
-              className="ex-album-art-img"
-              src={artworkLarge || album.artworkUrl100}
-              alt={album.collectionName || 'Album'}
-            />
-          ) : (
-            <div className="ex-art-placeholder">
-              {(album.collectionName || 'Album').slice(0, 36)}
-            </div>
-          )}
+          <AlbumCoverImg
+            src={artworkLarge || album.artworkUrl100}
+            alt={album.collectionName || 'Album'}
+            placeholderMaxLen={36}
+          />
           <div className="ex-play-overlay" aria-hidden>
             <div className="ex-play-circle">
               <svg viewBox="0 0 24 24">
@@ -117,11 +110,12 @@ export default function HomeRecommendations({ favoriteIds, onToggleFavorite }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(RSS_TOP);
+        const res = await fetch(topAlbumsRssJsonUrl(), { credentials: 'omit' });
+        const text = await res.text();
+        const json = parseItunesJsonBody(text, res.ok);
         if (!res.ok) {
-          throw new Error('Could not load recommendations');
+          throw new Error(json?.errorMessage || 'Could not load recommendations');
         }
-        const json = await res.json();
         const parsed = parseItunesAlbumsRss(json);
         const { trending: tr, fresh: fr } = splitTrendingAndFresh(parsed, {
           freshCount: 12,
@@ -132,7 +126,7 @@ export default function HomeRecommendations({ favoriteIds, onToggleFavorite }) {
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e.message || 'Failed to load');
+          setError(friendlyItunesNetworkError(e));
           setTrending([]);
           setFresh([]);
         }
@@ -168,7 +162,15 @@ export default function HomeRecommendations({ favoriteIds, onToggleFavorite }) {
     );
   }
 
-  if (error || (!trending.length && !fresh.length)) {
+  if (error) {
+    return (
+      <section className="ex-rec-section ex-rec-section--error" aria-label="Recommendations unavailable">
+        <p className="ex-rec-error">{error}</p>
+      </section>
+    );
+  }
+
+  if (!trending.length && !fresh.length) {
     return null;
   }
 

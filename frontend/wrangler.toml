@@ -1,0 +1,7 @@
+# Free iTunes proxy on Cloudflare Workers (optional — only if Apple is blocked).
+# From repo root: cd frontend && npx wrangler deploy
+# Then build with VITE_ITUNES_API_BASE=https://<worker-subdomain>.workers.dev
+
+name = "musicsearch-itunes-proxy"
+main = "itunes-proxy-worker.js"
+compatibility_date = "2024-11-01"

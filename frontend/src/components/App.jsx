@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Routes, Route, NavLink } from 'react-router';
+import { Routes, Route, NavLink, useNavigate } from 'react-router';
 import { Alert } from 'react-bootstrap';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 import AlbumSearchForm from './AlbumSearchForm';
 import AlbumList from './AlbumList';
@@ -9,15 +10,18 @@ import HomeRecommendations from './HomeRecommendations';
 import TrackList from './TrackList';
 import LandingPage from './LandingPage';
 import LoginPage from './LoginPage';
+import AuthCorner from './AuthCorner';
+import { auth, isFirebaseConfigured, signInWithGoogleAccount } from '../firebase';
+import { friendlyItunesNetworkError, parseItunesJsonBody, searchAlbumsUrl } from '../utils/itunesApi';
 
 import '../explore-page.css';
 
-const ALBUM_QUERY_TEMPLATE = "https://itunes.apple.com/search?limit=25&term={searchTerm}&entity=album&attribute=allArtistTerm"
 const RECENT_SEARCHES_STORAGE_KEY = 'musicsearch_recent_searches';
 const FAVORITE_ALBUMS_STORAGE_KEY = 'musicsearch_favorite_albums';
 const THEME_STORAGE_KEY = 'musicsearch_theme';
 
-function App() {
+function AppRoutes() {
+  const navigate = useNavigate();
   const [albumData, setAlbumData] = useState([]);
   const [alertMessage, setAlertMessage] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -26,6 +30,24 @@ function App() {
   const [recentSearches, setRecentSearches] = useState([]);
   const [favoriteAlbums, setFavoriteAlbums] = useState([]);
   const [theme, setTheme] = useState('dark');
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (!auth) {
+      setUser(null);
+      return undefined;
+    }
+    return onAuthStateChanged(auth, setUser);
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -101,10 +123,18 @@ function App() {
     setLastQuery(decodedQuery);
     addRecentSearch(decodedQuery);
     setIsSearching(true);
-    const url = ALBUM_QUERY_TEMPLATE.replace('{searchTerm}', searchTerm);
+    const url = searchAlbumsUrl(searchTerm);
 
-    fetch(url)
-      .then((res) => res.json())
+    fetch(url, { credentials: 'omit' })
+      .then(async (res) => {
+        const text = await res.text();
+        const data = parseItunesJsonBody(text, res.ok);
+        if (!res.ok) {
+          const msg = data.errorMessage || data.error || `Request failed (${res.status}).`;
+          throw new Error(typeof msg === 'string' ? msg : 'Could not load search results.');
+        }
+        return data;
+      })
       .then((data) => {
         const results = data.results || [];
         const dedupedAlbums = results.filter((album, idx, arr) => (
@@ -112,15 +142,16 @@ function App() {
         ));
 
         if (results.length === 0) {
-          setAlertMessage("No albums found for this search.");
+          setAlertMessage('No albums found for this search.');
         }
 
         setAlbumData(dedupedAlbums);
       })
       .catch((err) => {
-        setAlertMessage(err.message)
+        setAlertMessage(friendlyItunesNetworkError(err));
+        setAlbumData([]);
       })
-      .then(() => {
+      .finally(() => {
         setIsSearching(false);
       });
   };
@@ -139,15 +170,44 @@ function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  const handleGoogleSignIn = useCallback(async () => {
+    if (!isFirebaseConfigured) {
+      navigate('/login');
+      return;
+    }
+    try {
+      await signInWithGoogleAccount();
+      navigate('/explore', { replace: true });
+    } catch (err) {
+      if (err?.code === 'auth/popup-closed-by-user') return;
+      navigate('/login');
+    }
+  }, [navigate]);
+
   return (
     <Routes>
       <Route
         path="/"
-        element={<LandingPage theme={theme} onToggleTheme={toggleTheme} />}
+        element={(
+          <LandingPage
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            user={user}
+            onSignOut={handleSignOut}
+            onGoogleSignIn={handleGoogleSignIn}
+          />
+        )}
       />
       <Route
         path="/login"
-        element={<LoginPage theme={theme} onToggleTheme={toggleTheme} />}
+        element={(
+          <LoginPage
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            user={user}
+            onSignOut={handleSignOut}
+          />
+        )}
       />
       <Route
         path="/explore"
@@ -167,9 +227,10 @@ function App() {
               <div className="ex-orb ex-orb1" aria-hidden />
               <div className="ex-orb ex-orb2" aria-hidden />
               <div className="ex-orb ex-orb3" aria-hidden />
+              <AuthCorner user={user} onSignOut={handleSignOut} />
               <div className="ex-page">
                 <header className="ex-topbar">
-                  <span className="ex-logo">MusicSearch</span>
+                  <span className="ex-logo">Waveform</span>
                   <nav className="ex-nav" aria-label="Main">
                     <NavLink
                       to="/explore"
@@ -183,19 +244,6 @@ function App() {
                       className={({ isActive }) => (isActive ? 'ex-nav-active' : undefined)}
                     >
                       Favorites ({favoriteAlbums.length})
-                    </NavLink>
-                    <NavLink
-                      to="/"
-                      end
-                      className={({ isActive }) => (isActive ? 'ex-nav-active' : undefined)}
-                    >
-                      Home
-                    </NavLink>
-                    <NavLink
-                      to="/login"
-                      className={({ isActive }) => (isActive ? 'ex-nav-active' : undefined)}
-                    >
-                      Log in
                     </NavLink>
                   </nav>
                   <button type="button" className="ex-theme-btn" onClick={toggleTheme}>
@@ -232,7 +280,7 @@ function App() {
                 <footer className="ex-footer">
                   <small>
                     Powered by the{' '}
-                    <a href="https://affiliate.itunes.apple.com/resources/documentation/itunes-store-web-service-search-api/">
+                    <a href="https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/Searching.html">
                       iTunes Search API
                     </a>
                     .
@@ -261,9 +309,10 @@ function App() {
               <div className="ex-orb ex-orb1" aria-hidden />
               <div className="ex-orb ex-orb2" aria-hidden />
               <div className="ex-orb ex-orb3" aria-hidden />
+              <AuthCorner user={user} onSignOut={handleSignOut} />
               <div className="ex-page">
                 <header className="ex-topbar">
-                  <span className="ex-logo">MusicSearch</span>
+                  <span className="ex-logo">Waveform</span>
                   <nav className="ex-nav" aria-label="Main">
                     <NavLink
                       to="/explore"
@@ -277,19 +326,6 @@ function App() {
                       className={({ isActive }) => (isActive ? 'ex-nav-active' : undefined)}
                     >
                       Favorites ({favoriteAlbums.length})
-                    </NavLink>
-                    <NavLink
-                      to="/"
-                      end
-                      className={({ isActive }) => (isActive ? 'ex-nav-active' : undefined)}
-                    >
-                      Home
-                    </NavLink>
-                    <NavLink
-                      to="/login"
-                      className={({ isActive }) => (isActive ? 'ex-nav-active' : undefined)}
-                    >
-                      Log in
                     </NavLink>
                   </nav>
                   <button type="button" className="ex-theme-btn" onClick={toggleTheme}>
@@ -317,7 +353,7 @@ function App() {
                 <footer className="ex-footer">
                   <small>
                     Powered by the{' '}
-                    <a href="https://affiliate.itunes.apple.com/resources/documentation/itunes-store-web-service-search-api/">
+                    <a href="https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/Searching.html">
                       iTunes Search API
                     </a>
                     .
@@ -346,6 +382,8 @@ function App() {
               setAlertMessage={setAlertMessage}
               theme={theme}
               onToggleTheme={toggleTheme}
+              user={user}
+              onSignOut={handleSignOut}
             />
           </>
         }
@@ -354,4 +392,6 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return <AppRoutes />;
+}

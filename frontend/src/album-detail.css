@@ -1,18 +1,24 @@
 /* Floating alert when album route shows errors */
 .album-detail-alert {
   position: fixed;
-  top: 12px;
+  top: max(12px, env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 300;
-  max-width: min(560px, 92vw);
+  width: min(
+    560px,
+    calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 24px)
+  );
+  max-width: 100%;
   margin: 0;
+  box-sizing: border-box;
 }
 
 /* Album detail — glass / vinyl carousel (scoped), follows body[data-theme] */
 .album-detail-page {
   font-family: "Sora", "Inter", "Segoe UI", sans-serif;
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
   overflow-x: hidden;
   transition: background 0.3s ease, color 0.3s ease;
@@ -144,8 +150,11 @@ body[data-theme="dark"] .album-detail-page .orb3 {
   position: relative;
   z-index: 1;
   max-width: 780px;
+  width: 100%;
   margin: 0 auto;
-  padding: 40px 24px 100px;
+  box-sizing: border-box;
+  padding: max(32px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px))
+    max(100px, calc(5rem + env(safe-area-inset-bottom, 0px))) max(20px, env(safe-area-inset-left, 0px));
 }
 
 .album-detail-topbar {
@@ -421,9 +430,21 @@ body[data-theme="dark"] .album-detail-page .carousel-wrap::after {
   gap: 16px;
   box-shadow: var(--album-shadow-disc);
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s, background 0.25s ease,
+    backdrop-filter 0.25s ease;
   position: relative;
   overflow: hidden;
+}
+
+/* Backdrop blur + rotating art = very expensive; use opaque glass while disc spins */
+.album-detail-page .disc-card.spinning {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+body[data-theme="dark"] .album-detail-page .disc-card.spinning {
+  background: rgba(14, 22, 36, 0.94);
 }
 
 .album-detail-page .disc-card::before {
@@ -463,7 +484,13 @@ body[data-theme="dark"] .album-detail-page .disc-card.active {
   width: 130px;
   height: 130px;
   position: relative;
-  filter: drop-shadow(0 8px 20px rgba(80, 100, 160, 0.25));
+  border-radius: 50%;
+  /* box-shadow composites on its own layer; drop-shadow on a parent forces costly repaints while the SVG rotates */
+  box-shadow: 0 10px 28px rgba(60, 80, 130, 0.22);
+}
+
+body[data-theme="dark"] .album-detail-page .vinyl-wrap {
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
 }
 
 .album-detail-page .vinyl {
@@ -471,24 +498,38 @@ body[data-theme="dark"] .album-detail-page .disc-card.active {
   height: 100%;
   border-radius: 50%;
   position: relative;
+  isolation: isolate;
+}
+
+/* Rotate this wrapper only — keeps SVG off the transition/animation conflict path */
+.album-detail-page .vinyl-rotor {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  transition: transform 0.4s ease;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.album-detail-page .vinyl-rotor--spinning {
+  transition: none;
+  will-change: transform;
+  animation: album-detail-vinyl-spin 2.4s linear infinite;
 }
 
 .album-detail-page .vinyl-svg {
   width: 100%;
   height: 100%;
-  transition: transform 0.4s;
-}
-
-.album-detail-page .disc-card.spinning .vinyl-svg {
-  animation: album-detail-vinyl-spin 2.4s linear infinite;
+  display: block;
 }
 
 @keyframes album-detail-vinyl-spin {
   from {
-    transform: rotate(0deg);
+    transform: translateZ(0) rotate(0deg);
   }
   to {
-    transform: rotate(360deg);
+    transform: translateZ(0) rotate(360deg);
   }
 }
 
@@ -499,6 +540,13 @@ body[data-theme="dark"] .album-detail-page .disc-card.active {
   border-radius: 50%;
   border: 2px solid rgba(108, 127, 216, 0.5);
   animation: album-detail-pulse-ring 1.8s ease-in-out infinite;
+}
+
+/* Pulse + spin together thrashes compositing; static ring while playing */
+.album-detail-page .disc-card.spinning .vinyl-wrap::after {
+  animation: none;
+  opacity: 0.85;
+  transform: scale(1);
 }
 
 body[data-theme="dark"] .album-detail-page .disc-card.active .vinyl-wrap::after {
@@ -576,10 +624,15 @@ body[data-theme="dark"] .album-detail-page .disc-card.active .vinyl-wrap::after 
 
 .album-detail-page .player-bar {
   position: fixed;
-  bottom: 24px;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%) translateY(80px);
-  width: min(680px, calc(100vw - 48px));
+  width: min(
+    680px,
+    calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 32px)
+  );
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--album-player-surface);
   border: 1px solid var(--album-border-glass);
   backdrop-filter: blur(28px);
@@ -835,7 +888,7 @@ body[data-theme="dark"] .album-detail-page .album-detail-loading-spinner {
 
 @media (prefers-reduced-motion: reduce) {
   .album-detail-page .orb,
-  .album-detail-page .disc-card.spinning .vinyl-svg,
+  .album-detail-page .vinyl-rotor--spinning,
   .album-detail-page .player-thumb-disc,
   .album-detail-page .disc-card.active .vinyl-wrap::after {
     animation: none !important;
@@ -859,9 +912,17 @@ body[data-theme="dark"] .album-detail-page .album-detail-loading-spinner {
     text-align: center;
   }
 
+  .album-detail-page .disc-card {
+    width: min(190px, calc(100vw - 2.5rem));
+  }
+
   .album-detail-page .player-bar {
     flex-wrap: wrap;
-    padding: 12px 14px;
+    padding: 12px max(12px, env(safe-area-inset-left, 0px)) 12px max(12px, env(safe-area-inset-right, 0px));
+    width: min(
+      680px,
+      calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 20px)
+    );
   }
 
   .album-detail-page .progress-row {

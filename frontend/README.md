@@ -1,6 +1,6 @@
-# MusicSearch Frontend
+# Waveform Frontend
 
-This directory contains the frontend application for MusicSearch, built with React and Vite.
+This directory contains the frontend application for Waveform, built with React and Vite.
 
 The app lets users:
 

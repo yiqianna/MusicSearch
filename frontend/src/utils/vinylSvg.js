@@ -4,10 +4,10 @@
  */
 export function makeVinylSvgString(idPrefix, c1, c2, accent) {
   const id = String(idPrefix).replace(/[^a-zA-Z0-9_-]/g, '');
-  const rings = [58, 52, 46, 40, 34, 28, 22, 17, 13]
+  const rings = [56, 40, 28, 16]
     .map(
       (r) =>
-        `<circle cx="65" cy="65" r="${r}" fill="none" stroke="rgba(255,255,255,0.055)" stroke-width="1.2"/>`
+        `<circle cx="65" cy="65" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1.2"/>`
     )
     .join('');
 
